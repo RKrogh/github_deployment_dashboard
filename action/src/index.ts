@@ -81,7 +81,9 @@ async function run(): Promise<void> {
 
     const { context } = github;
     const service = core.getInput('service') || context.repo.repo;
-    const version = core.getInput('version') || context.sha.substring(0, 7);
+    const overrideSha = core.getInput('sha') || '';
+    const effectiveSha = overrideSha || context.sha;
+    const version = core.getInput('version') || effectiveSha.substring(0, 7);
 
     const dashboardRepo = core.getInput('dashboard-repo') || '';
     const dashboardBranch = core.getInput('dashboard-branch') || 'gh-pages';
@@ -102,7 +104,7 @@ async function run(): Promise<void> {
     const deploymentResponse = await octokit.rest.repos.createDeployment({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      ref: context.sha,
+      ref: effectiveSha,
       environment,
       payload,
       auto_merge: false,
@@ -138,7 +140,7 @@ async function run(): Promise<void> {
           await writeStatusFile(dashboardToken, dashboardRepo, dashboardBranch, {
             service,
             environment,
-            sha: context.sha,
+            sha: effectiveSha,
             ref: context.ref,
             version,
             status,
