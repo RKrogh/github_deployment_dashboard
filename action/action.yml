@@ -26,6 +26,9 @@ inputs:
   description:
     description: 'Free-form description of the deployment.'
     required: false
+  sha:
+    description: 'Override the commit SHA to record. Use this for prod deploys that re-deploy an earlier build artifact, so the dashboard records the original build commit rather than the dispatch commit.'
+    required: false
   token:
     description: 'GitHub token for API authentication.'
     required: true

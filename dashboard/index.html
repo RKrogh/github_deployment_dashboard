@@ -149,6 +149,10 @@
     .status-inactive { background: var(--text-secondary); }
     .status-unknown { background: var(--border); }
     .cell--empty { color: var(--text-secondary); font-size: 13px; }
+    .cell .commit-msg {
+      display: block; font-size: 12px; color: var(--text-secondary);
+      max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .cell .env-link {
       display: inline-block; margin-left: 4px; color: var(--text-secondary);
       text-decoration: none; font-size: 11px; vertical-align: middle;
@@ -195,6 +199,113 @@
 
     .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
     .empty-state h2 { font-size: 18px; margin-bottom: 8px; color: var(--text-primary); }
+
+    /* Clickable service rows */
+    tbody tr { cursor: pointer; }
+    tbody tr.selected { background: rgba(88, 166, 255, 0.08); }
+
+    /* Build history slide-out panel */
+    .panel-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+    .panel-backdrop.open { display: block; }
+
+    .build-panel {
+      position: fixed; top: 0; right: -52vw; width: 50vw; height: 100vh;
+      background: var(--bg-secondary); border-left: 1px solid var(--border);
+      z-index: 101; transition: right 0.25s ease;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .build-panel.open { right: 0; }
+
+    @media (max-width: 900px) {
+      .build-panel { width: 85vw; right: -87vw; }
+    }
+    @media (max-width: 600px) {
+      .build-panel { width: 100vw; right: -100vw; }
+    }
+
+    .build-panel__header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .build-panel__header h2 { font-size: 16px; font-weight: 600; }
+    .build-panel__close {
+      background: none; border: none; color: var(--text-secondary);
+      font-size: 20px; cursor: pointer; padding: 4px 8px; line-height: 1;
+    }
+    .build-panel__close:hover { color: var(--text-primary); }
+
+    .build-panel__body {
+      flex: 1; overflow-y: auto; padding: 16px 24px 16px 20px;
+    }
+
+    .build-panel__token-prompt {
+      padding: 20px; text-align: center; color: var(--text-secondary);
+    }
+    .build-panel__token-prompt input {
+      width: 100%; margin: 12px 0; padding: 8px 12px; font-size: 14px;
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary); font-family: inherit;
+    }
+    .build-panel__token-prompt input:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3);
+    }
+
+    /* Build history table inside panel */
+    .build-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .build-table thead th {
+      position: sticky; top: 0; background: var(--bg-tertiary);
+      padding: 8px 10px; text-align: left; font-weight: 600;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-secondary); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .build-table tbody tr { border-bottom: 1px solid var(--border); cursor: default; }
+    .build-table tbody tr:hover { background: rgba(136, 149, 167, 0.04); }
+    .build-table td { padding: 8px 10px; vertical-align: middle; }
+    .build-table td.desc-cell {
+      max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .build-table .status-icon { font-size: 14px; text-align: center; }
+
+    .build-panel__summary {
+      margin-bottom: 16px; padding: 10px 14px; font-size: 13px;
+      background: var(--bg-tertiary); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-secondary); line-height: 1.6;
+    }
+    .build-panel__summary strong { color: var(--text-primary); }
+
+    .build-panel__loading {
+      text-align: center; padding: 40px 20px; color: var(--text-secondary);
+    }
+    .build-panel__error {
+      padding: 10px 14px; margin-bottom: 12px;
+      background: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.4);
+      border-radius: 6px; color: var(--red); font-size: 13px;
+    }
+    .build-table tr.latest-dev {
+      background: rgba(63, 185, 80, 0.08);
+      box-shadow: inset 3px 0 0 var(--green);
+    }
+    .build-table tr.latest-prod {
+      background: rgba(88, 166, 255, 0.08);
+      box-shadow: inset -3px 0 0 var(--blue);
+    }
+    .build-table tr.latest-dev.latest-prod {
+      background: rgba(63, 185, 80, 0.06);
+      box-shadow: inset 3px 0 0 var(--green), inset -3px 0 0 var(--blue);
+    }
+    .build-table .latest-tag {
+      display: inline-block; font-size: 9px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 1px 5px; border-radius: 8px; margin-left: 4px; vertical-align: middle;
+    }
+    .build-table .latest-tag--dev { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .build-table .latest-tag--prod { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
   </style>
 </head>
 <body>
@@ -212,10 +323,10 @@
       <small id="mode-hint">Static mode reads status files pushed by the deploy action. No token needed.</small>
     </div>
 
-    <div id="token-group" class="form-group hidden">
+    <div id="token-group" class="form-group">
       <label for="token-input">GitHub Token (PAT)</label>
       <input type="password" id="token-input" placeholder="ghp_...">
-      <small>Stored in localStorage. Needs <code>repo</code> scope or fine-grained <code>deployments:read</code> on target repos.</small>
+      <small id="token-hint">Stored in localStorage. Enables build history panel and commit message enrichment. Fine-grained PAT with <code>actions:read</code> and <code>contents:read</code>.</small>
     </div>
 
     <div class="form-group">
@@ -227,7 +338,7 @@
       </div>
       <input type="url" id="config-url" class="hidden" placeholder="https://raw.githubusercontent.com/org/repo/main/.deploy-dashboard.yml">
       <textarea id="config-yaml" class="hidden" rows="12" placeholder="org: your-org&#10;environments:&#10;  - dev&#10;  - staging&#10;  - prod&#10;services:&#10;  - repo: my-service"></textarea>
-      <small id="auto-hint" class="">Looks for .deploy-dashboard.yml next to this page.</small>
+      <small id="auto-hint" class="">Looks for deploy-dashboard.yml (or .deploy-dashboard.yml) next to this page.</small>
     </div>
 
     <div class="form-group">
@@ -235,7 +346,10 @@
       <input type="text" id="refresh-input" value="30" style="width:80px">
     </div>
 
-    <button id="btn-load" class="btn-primary">Load Dashboard</button>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button id="btn-load" class="btn-primary">Load Dashboard</button>
+      <button id="btn-cancel" class="btn-secondary hidden">Cancel</button>
+    </div>
     <div id="setup-error" class="error-msg hidden"></div>
   </div>
 
@@ -260,6 +374,19 @@
     <div id="summary-bar" class="summary-bar hidden"></div>
     <div id="table-container"></div>
     <div id="error-container"></div>
+  </div>
+
+  <!-- Build History Panel -->
+  <div id="panel-backdrop" class="panel-backdrop"></div>
+  <div id="build-panel" class="build-panel">
+    <div class="build-panel__header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h2 id="build-panel-title">Build History</h2>
+        <a id="build-panel-actions-link" href="#" target="_blank" rel="noopener" class="btn-secondary" style="font-size:12px;text-decoration:none;display:none">Actions &#x2197;</a>
+      </div>
+      <button id="build-panel-close" class="build-panel__close">&times;</button>
+    </div>
+    <div id="build-panel-body" class="build-panel__body"></div>
   </div>
 </div>
 
@@ -286,6 +413,11 @@
     sortMode: 'config',
     countdownSeconds: 0,
     refreshTimer: null,
+    // Build history panel
+    selectedServiceKey: null,
+    workflowMap: null,       // Map<workflowName, workflowFileName> — cached
+    buildHistoryToken: localStorage.getItem('ghdd-build-token') || '',
+    commitMessages: new Map(),  // Map<sha, message> — cached
   };
 
   // ============================================================
@@ -307,6 +439,7 @@
   const autoHint = $('#auto-hint');
   const refreshInput = $('#refresh-input');
   const btnLoad = $('#btn-load');
+  const btnCancel = $('#btn-cancel');
   const setupError = $('#setup-error');
   const orgName = $('#org-name');
   const modeIndicator = $('#mode-indicator');
@@ -318,6 +451,11 @@
   const summaryBar = $('#summary-bar');
   const tableContainer = $('#table-container');
   const errorContainer = $('#error-container');
+  const panelBackdrop = $('#panel-backdrop');
+  const buildPanel = $('#build-panel');
+  const buildPanelTitle = $('#build-panel-title');
+  const buildPanelBody = $('#build-panel-body');
+  const buildPanelClose = $('#build-panel-close');
 
   // ============================================================
   // CONFIG PARSER
@@ -439,8 +577,8 @@
     const perPage = service.monoRepoService ? 30 : 5;
     const url =
       'https://api.github.com/repos/' +
-      encodeURIComponent(service.owner) + '/' +
-      encodeURIComponent(service.repo) +
+      encodeURIComponent(service.owner.toLowerCase()) + '/' +
+      encodeURIComponent(service.repo.toLowerCase()) +
       '/deployments?environment=' + encodeURIComponent(environment) +
       '&per_page=' + perPage;
 
@@ -475,8 +613,8 @@
     try {
       const statusUrl =
         'https://api.github.com/repos/' +
-        encodeURIComponent(service.owner) + '/' +
-        encodeURIComponent(service.repo) +
+        encodeURIComponent(service.owner.toLowerCase()) + '/' +
+        encodeURIComponent(service.repo.toLowerCase()) +
         '/deployments/' + deployment.id + '/statuses?per_page=1';
       const statuses = await apiFetch(statusUrl, token);
       if (statuses.length > 0) {
@@ -582,8 +720,8 @@
         batch.map(async (task) => {
           const url =
             'https://api.github.com/repos/' +
-            encodeURIComponent(task.owner) + '/' +
-            encodeURIComponent(task.repo) +
+            encodeURIComponent(task.owner.toLowerCase()) + '/' +
+            encodeURIComponent(task.repo.toLowerCase()) +
             '/compare/' + task.baseSha + '...' + task.headSha;
           const data = await apiFetch(url, token);
           return { key: task.key, aheadBy: data.ahead_by || 0, behindBy: data.behind_by || 0 };
@@ -649,6 +787,46 @@
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
+  }
+
+  async function enrichCommitMessages(config, deployments) {
+    var token = getEffectiveToken();
+    if (!token) return;
+
+    // Collect unique SHAs we don't already have
+    var shasToFetch = [];
+    var ownerRepo = null;
+    for (var [, envMap] of deployments) {
+      for (var [, dep] of envMap) {
+        if (dep && dep.sha && !state.commitMessages.has(dep.sha)) {
+          shasToFetch.push(dep.sha);
+          if (!ownerRepo) ownerRepo = { owner: dep.repoOwner, repo: dep.repoName };
+        }
+      }
+    }
+
+    if (!shasToFetch.length || !ownerRepo) return;
+
+    // Deduplicate
+    shasToFetch = [...new Set(shasToFetch)];
+
+    var baseUrl = 'https://api.github.com/repos/' +
+      encodeURIComponent(ownerRepo.owner.toLowerCase()) + '/' +
+      encodeURIComponent(ownerRepo.repo.toLowerCase());
+
+    // Fetch in batches of 6
+    for (var i = 0; i < shasToFetch.length; i += 6) {
+      var batch = shasToFetch.slice(i, i + 6);
+      await Promise.allSettled(batch.map(async function (sha) {
+        try {
+          var data = await apiFetch(baseUrl + '/commits/' + sha, token);
+          var msg = data.commit && data.commit.message ? data.commit.message.split('\n')[0] : '';
+          state.commitMessages.set(sha, msg);
+        } catch (err) {
+          console.warn('Failed to fetch commit ' + sha.substring(0, 7) + ':', err.message);
+        }
+      }));
+    }
   }
 
   function renderSummary(config, deployments) {
@@ -721,7 +899,9 @@
 
     for (const service of services) {
       const drift = driftMap.get(service.key);
-      html += '<tr' + (drift.hasDrift ? ' class="drift"' : '') + '>';
+      const rowCls = drift.hasDrift ? ' drift' : '';
+      const selected = state.selectedServiceKey === service.key ? ' selected' : '';
+      html += '<tr class="' + rowCls + selected + '" data-service-key="' + escapeHtml(service.key) + '">';
 
       html += '<td class="service-name">';
       html += escapeHtml(service.displayName);
@@ -749,6 +929,8 @@
           const commitUrl = 'https://github.com/' + dep.repoOwner + '/' + dep.repoName + '/commit/' + dep.sha;
           const displayVersion = dep.version && dep.version !== shortSha ? dep.version : null;
 
+          var commitMsg = state.commitMessages.get(dep.sha) || '';
+
           html += '<td class="cell">';
           html += '<span class="status-dot status-' + dep.status + '"></span>';
           html += '<a href="' + commitUrl + '" target="_blank" rel="noopener" title="' + dep.sha + '">';
@@ -756,6 +938,10 @@
           html += '</a>';
           if (dep.environmentUrl) {
             html += '<a href="' + escapeHtml(dep.environmentUrl) + '" target="_blank" rel="noopener" class="env-link" title="Open environment">&#x2197;</a>';
+          }
+          if (commitMsg) {
+            var truncMsg = commitMsg.length > 40 ? commitMsg.substring(0, 37) + '...' : commitMsg;
+            html += '<span class="commit-msg" title="' + escapeHtml(commitMsg) + '">' + escapeHtml(truncMsg) + '</span>';
           }
           html += '<span class="time" title="' + dep.createdAt + '">' + relativeTime(dep.createdAt) + '</span>';
           html += '</td>';
@@ -785,20 +971,312 @@
   }
 
   // ============================================================
+  // BUILD HISTORY PANEL
+  // ============================================================
+
+  async function apiFetchText(url, token) {
+    const resp = await fetch(url, {
+      headers: { Authorization: 'token ' + token, Accept: 'application/vnd.github+json' },
+    });
+    if (!resp.ok) throw new Error('GitHub API ' + resp.status);
+    return resp.text();
+  }
+
+  async function resolveWorkflowMap(token, owner, repo) {
+    if (state.workflowMap) return state.workflowMap;
+    const data = await apiFetch(
+      'https://api.github.com/repos/' + encodeURIComponent(owner.toLowerCase()) + '/' +
+      encodeURIComponent(repo.toLowerCase()) + '/actions/workflows?per_page=100', token
+    );
+    const map = new Map();
+    for (const wf of data.workflows) {
+      map.set(wf.name, wf.path.replace('.github/workflows/', ''));
+    }
+    state.workflowMap = map;
+    return map;
+  }
+
+  async function resolveProdBuildNumber(token, owner, repo, runId) {
+    var repoBase = 'https://api.github.com/repos/' +
+      encodeURIComponent(owner.toLowerCase()) + '/' + encodeURIComponent(repo.toLowerCase());
+    const jobsData = await apiFetch(repoBase + '/actions/runs/' + runId + '/jobs', token);
+    const resolveJob = jobsData.jobs.find(function (j) {
+      return /resolve.*build.*prod/i.test(j.name);
+    });
+    if (!resolveJob || resolveJob.conclusion !== 'success') return null;
+
+    try {
+      const logText = await apiFetchText(repoBase + '/actions/jobs/' + resolveJob.id + '/logs', token);
+      const match = logText.match(/Deploying build #(\d+)/);
+      return match ? parseInt(match[1], 10) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function fetchBuildHistory(token, service, perPage) {
+    perPage = perPage || 10;
+    var workflowMap = await resolveWorkflowMap(token, service.owner, service.repo);
+    var serviceName = service.monoRepoService || service.repo;
+    var workflowFile = workflowMap.get(serviceName);
+    if (!workflowFile) throw new Error('No workflow found for ' + serviceName);
+
+    var baseUrl = 'https://api.github.com/repos/' +
+      encodeURIComponent(service.owner.toLowerCase()) + '/' + encodeURIComponent(service.repo.toLowerCase());
+
+    // Fetch push runs (builds/dev deploys) and dispatch runs (prod deploys) in parallel
+    var pushPromise = apiFetch(
+      baseUrl + '/actions/workflows/' + encodeURIComponent(workflowFile) +
+      '/runs?branch=main&event=push&per_page=' + perPage + '&status=completed', token
+    );
+    var dispatchPromise = apiFetch(
+      baseUrl + '/actions/workflows/' + encodeURIComponent(workflowFile) +
+      '/runs?branch=main&event=workflow_dispatch&per_page=' + perPage + '&status=success', token
+    );
+
+    var pushData = await pushPromise;
+    var dispatchData = await dispatchPromise;
+
+    var buildRuns = pushData.workflow_runs || [];
+    var prodCandidates = dispatchData.workflow_runs || [];
+
+    // For push runs: successful build = deployed to dev (skip individual job checks)
+    var buildMap = new Map();
+    for (var i = 0; i < buildRuns.length; i++) {
+      var run = buildRuns[i];
+      buildMap.set(run.run_number, {
+        runNumber: run.run_number,
+        runId: run.id,
+        date: run.created_at,
+        description: run.display_title || '',
+        sha: run.head_sha,
+        conclusion: run.conclusion,
+        devStatus: run.conclusion === 'success' ? 'success' : run.conclusion,
+        prodStatus: null,
+        prodDate: null,
+      });
+    }
+
+    // Resolve prod deploys to their source build (in parallel, max 6 concurrent)
+    await Promise.allSettled(prodCandidates.map(async function (run) {
+      var buildNum = await resolveProdBuildNumber(token, service.owner, service.repo, run.id);
+      if (buildNum !== null && buildMap.has(buildNum)) {
+        buildMap.get(buildNum).prodStatus = 'success';
+        buildMap.get(buildNum).prodDate = run.created_at;
+      }
+    }));
+
+    return Array.from(buildMap.values()).sort(function (a, b) { return b.runNumber - a.runNumber; });
+  }
+
+  function getEffectiveToken() {
+    return state.token || state.buildHistoryToken ||
+      localStorage.getItem('ghdd-token') || localStorage.getItem('ghdd-build-token') || '';
+  }
+
+  function renderBuildPanelLoading() {
+    buildPanelBody.innerHTML =
+      '<div class="build-panel__loading">' +
+      '<div class="skeleton" style="width:80%;margin:0 auto 8px"></div>' +
+      '<div class="skeleton" style="width:60%;margin:0 auto 8px"></div>' +
+      '<div class="skeleton" style="width:70%;margin:0 auto"></div>' +
+      '<p style="margin-top:16px">Loading build history...</p>' +
+      '</div>';
+  }
+
+  function renderBuildPanelTokenPrompt() {
+    buildPanelBody.innerHTML =
+      '<div class="build-panel__token-prompt">' +
+      '<p>Build history requires a GitHub token with <code>actions:read</code> scope.</p>' +
+      '<input type="password" id="panel-token-input" placeholder="ghp_...">' +
+      '<button class="btn-primary" id="panel-token-submit">Load History</button>' +
+      '</div>';
+
+    var input = document.getElementById('panel-token-input');
+    var btn = document.getElementById('panel-token-submit');
+    input.value = state.buildHistoryToken;
+
+    btn.addEventListener('click', function () {
+      var t = input.value.trim();
+      if (!t) return;
+      state.buildHistoryToken = t;
+      localStorage.setItem('ghdd-build-token', t);
+      loadBuildHistory(state.selectedServiceKey);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') btn.click();
+    });
+  }
+
+  function renderBuildPanelError(msg) {
+    buildPanelBody.innerHTML =
+      '<div class="build-panel__error">' + escapeHtml(msg) + '</div>';
+  }
+
+  function statusIcon(status) {
+    if (status === 'success') return '\u2705';
+    if (status === 'failure') return '\u274C';
+    if (status === 'skipped' || status === null) return '\u2014';
+    return '\u26A0\uFE0F';
+  }
+
+  function renderBuildHistory(builds, service, perPage) {
+    perPage = perPage || 10;
+    if (!builds || builds.length === 0) {
+      buildPanelBody.innerHTML = '<div class="build-panel__loading">No builds found.</div>';
+      return;
+    }
+
+    // Summary
+    var latestDev = null, latestProd = null, driftCount = 0;
+    for (var i = 0; i < builds.length; i++) {
+      if (!latestDev && builds[i].devStatus === 'success') latestDev = builds[i];
+      if (!latestProd && builds[i].prodStatus === 'success') latestProd = builds[i];
+      if (builds[i].devStatus === 'success' && !builds[i].prodStatus) driftCount++;
+    }
+
+    var summaryHtml = '<div class="build-panel__summary">';
+    summaryHtml += '<strong>Dev:</strong> ' + (latestDev ? '#' + latestDev.runNumber + ' (' + new Date(latestDev.date).toLocaleDateString() + ')' : 'none') + '<br>';
+    summaryHtml += '<strong>Prod:</strong> ' + (latestProd ? '#' + latestProd.runNumber + ' (' + new Date(latestProd.prodDate || latestProd.date).toLocaleDateString() + ')' : 'never deployed via GH Actions') + '<br>';
+    if (latestProd && latestDev && latestDev.runNumber === latestProd.runNumber) {
+      summaryHtml += '<span style="color:var(--green)">Prod is up to date</span>';
+    } else if (driftCount > 0) {
+      summaryHtml += '<span style="color:var(--orange)">' + driftCount + ' build' + (driftCount > 1 ? 's' : '') + ' in Dev not yet in Prod</span>';
+    }
+    summaryHtml += '</div>';
+
+    // Table
+    var html = summaryHtml;
+    html += '<table class="build-table"><thead><tr>';
+    html += '<th>Build</th><th>Date</th><th>Description</th><th>Dev</th><th>Prod</th><th>Prod Date</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var j = 0; j < builds.length; j++) {
+      var b = builds[j];
+      var dateFmt = new Date(b.date).toLocaleDateString('sv-SE') + ' ' +
+        new Date(b.date).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+      var prodDateFmt = b.prodDate
+        ? new Date(b.prodDate).toLocaleDateString('sv-SE') + ' ' +
+          new Date(b.prodDate).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+        : '\u2014';
+      var shortSha = b.sha.substring(0, 7);
+      var commitUrl = 'https://github.com/' + service.owner + '/' + service.repo + '/commit/' + b.sha;
+      var desc = b.description.length > 60 ? b.description.substring(0, 57) + '...' : b.description;
+
+      var buildFailed = b.conclusion !== 'success';
+      var isLatestDev = latestDev && b.runNumber === latestDev.runNumber;
+      var isLatestProd = latestProd && b.runNumber === latestProd.runNumber;
+      var rowCls = (isLatestDev ? ' latest-dev' : '') + (isLatestProd ? ' latest-prod' : '');
+
+      html += '<tr class="' + rowCls + '">';
+      html += '<td><a href="' + commitUrl + '" target="_blank" rel="noopener" style="color:var(--text-link);text-decoration:none" title="' + shortSha + '">#' + b.runNumber + '</a>';
+      if (isLatestDev) html += '<span class="latest-tag latest-tag--dev">dev</span>';
+      if (isLatestProd) html += '<span class="latest-tag latest-tag--prod">prod</span>';
+      html += '</td>';
+      html += '<td style="white-space:nowrap;font-size:12px">' + dateFmt + '</td>';
+      html += '<td class="desc-cell" title="' + escapeHtml(b.description) + '">' + escapeHtml(desc) + '</td>';
+      html += '<td class="status-icon">' + (buildFailed ? '\u26A0\uFE0F' : statusIcon(b.devStatus)) + '</td>';
+      html += '<td class="status-icon">' + (buildFailed ? '\u26A0\uFE0F' : statusIcon(b.prodStatus)) + '</td>';
+      html += '<td style="white-space:nowrap;font-size:12px">' + prodDateFmt + '</td>';
+      html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+
+    // Show "Load more" if we got a full page of results (likely more available)
+    if (builds.length >= perPage) {
+      var nextPage = perPage + 10;
+      html += '<div style="text-align:center;padding:12px">';
+      html += '<button class="btn-secondary" id="btn-load-more">Load more</button>';
+      html += '</div>';
+    }
+
+    buildPanelBody.innerHTML = html;
+
+    // Wire up Load more button
+    var loadMoreBtn = document.getElementById('btn-load-more');
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', function () {
+        loadBuildHistory(state.selectedServiceKey, nextPage);
+      });
+    }
+  }
+
+  async function loadBuildHistory(serviceKey, perPage) {
+    perPage = perPage || 10;
+    var token = getEffectiveToken();
+    if (!token) {
+      renderBuildPanelTokenPrompt();
+      return;
+    }
+
+    renderBuildPanelLoading();
+
+    var service = state.config.services.find(function (s) { return s.key === serviceKey; });
+    if (!service) {
+      renderBuildPanelError('Service not found: ' + serviceKey);
+      return;
+    }
+
+    try {
+      var builds = await fetchBuildHistory(token, service, perPage);
+      renderBuildHistory(builds, service, perPage);
+    } catch (err) {
+      renderBuildPanelError('Failed to load build history: ' + err.message);
+    }
+  }
+
+  function openBuildPanel(serviceKey) {
+    state.selectedServiceKey = serviceKey;
+    var service = state.config.services.find(function (s) { return s.key === serviceKey; });
+    buildPanelTitle.textContent = service ? service.displayName : serviceKey;
+
+    // Set Actions link
+    var actionsLink = document.getElementById('build-panel-actions-link');
+    actionsLink.style.display = 'none';
+    if (service && state.workflowMap) {
+      var serviceName = service.monoRepoService || service.repo;
+      var workflowFile = state.workflowMap.get(serviceName);
+      if (workflowFile) {
+        actionsLink.href = 'https://github.com/' + service.owner.toLowerCase() + '/' +
+          service.repo.toLowerCase() + '/actions/workflows/' + workflowFile;
+        actionsLink.style.display = 'inline-block';
+      }
+    }
+
+    panelBackdrop.classList.add('open');
+    buildPanel.classList.add('open');
+
+    // Highlight selected row
+    if (state.config) renderTable(state.config, state.deployments);
+
+    loadBuildHistory(serviceKey);
+  }
+
+  function closeBuildPanel() {
+    state.selectedServiceKey = null;
+    panelBackdrop.classList.remove('open');
+    buildPanel.classList.remove('open');
+    buildPanelBody.innerHTML = '';
+    if (state.config) renderTable(state.config, state.deployments);
+  }
+
+  // ============================================================
   // CONTROLLER
   // ============================================================
   function updateSetupUI() {
     // Data mode
+    var tokenHint = $('#token-hint');
     if (state.dataMode === 'static') {
       modeStatic.classList.add('active');
       modeApi.classList.remove('active');
-      tokenGroup.classList.add('hidden');
-      modeHint.textContent = 'Static mode reads status files pushed by the deploy action. No token needed.';
+      modeHint.textContent = 'Static mode reads status files pushed by the deploy action.';
+      tokenHint.innerHTML = 'Optional. Enables build history panel and commit message enrichment. Fine-grained PAT with <code>actions:read</code> and <code>contents:read</code>.';
     } else {
       modeApi.classList.add('active');
       modeStatic.classList.remove('active');
-      tokenGroup.classList.remove('hidden');
       modeHint.textContent = 'API mode queries the GitHub Deployments API directly. Requires a token.';
+      tokenHint.innerHTML = 'Required. Fine-grained PAT with <code>deployments:read</code>, <code>actions:read</code>, and <code>contents:read</code>.';
     }
 
     // Config tab
@@ -822,11 +1300,19 @@
   }
 
   function showSetup() {
+    var hasConfig = !!state.config;
     setupEl.classList.remove('hidden');
     dashboardEl.classList.add('hidden');
     stopAutoRefresh();
 
-    tokenInput.value = state.token;
+    // Show cancel button only if we have a loaded config to go back to
+    if (hasConfig) {
+      btnCancel.classList.remove('hidden');
+    } else {
+      btnCancel.classList.add('hidden');
+    }
+
+    tokenInput.value = getEffectiveToken();
     configUrlInput.value = state.configUrl;
     configYamlInput.value = state.configYaml;
     refreshInput.value = state.refreshInterval;
@@ -858,9 +1344,10 @@
       if (!yaml) throw new Error('Please paste your YAML config.');
       return yaml;
     } else {
-      // Auto-detect: try .deploy-dashboard.yml next to this page
-      const resp = await fetch('.deploy-dashboard.yml');
-      if (!resp.ok) throw new Error('No .deploy-dashboard.yml found next to this page. Use URL or Paste instead.');
+      // Auto-detect: try both filenames (GitHub Pages doesn't serve dotfiles)
+      let resp = await fetch('deploy-dashboard.yml');
+      if (!resp.ok) resp = await fetch('.deploy-dashboard.yml');
+      if (!resp.ok) throw new Error('No deploy-dashboard.yml found next to this page. Use URL or Paste instead.');
       return resp.text();
     }
   }
@@ -939,6 +1426,17 @@
     renderSummary(state.config, state.deployments);
     renderErrors(state.errors);
 
+    // Enrich with commit messages if a token is available (works in both modes)
+    var enrichToken = getEffectiveToken();
+    if (enrichToken && state.deployments.size > 0) {
+      console.log('Enriching commit messages with token:', enrichToken.substring(0, 8) + '...');
+      await enrichCommitMessages(state.config, state.deployments);
+      console.log('Commit messages loaded:', state.commitMessages.size);
+      renderTable(state.config, state.deployments);
+    } else {
+      console.log('Skipping commit enrichment — token:', !!enrichToken, 'deployments:', state.deployments.size);
+    }
+
     // Drift details via compare API (only in API mode with a token)
     if (state.dataMode === 'api' && state.token) {
       state.driftDetails = await fetchDriftDetails(state.token, state.config, state.deployments);
@@ -987,9 +1485,37 @@
 
   btnLoad.addEventListener('click', loadConfig);
 
+  btnCancel.addEventListener('click', function () {
+    if (state.config) {
+      hideError();
+      showDashboard();
+      refresh();
+      startAutoRefresh();
+    }
+  });
+
   btnRefresh.addEventListener('click', function () {
     refresh();
     state.countdownSeconds = state.refreshInterval;
+  });
+
+  // Build history panel events
+  tableContainer.addEventListener('click', function (e) {
+    // Don't intercept link clicks — let them open in new tab
+    if (e.target.closest('a')) return;
+    var row = e.target.closest('tr[data-service-key]');
+    if (!row) return;
+    var key = row.getAttribute('data-service-key');
+    if (key) openBuildPanel(key);
+  });
+
+  buildPanelClose.addEventListener('click', closeBuildPanel);
+  panelBackdrop.addEventListener('click', closeBuildPanel);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && buildPanel.classList.contains('open')) {
+      closeBuildPanel();
+    }
   });
 
   btnSettings.addEventListener('click', showSetup);
