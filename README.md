@@ -1,6 +1,12 @@
 # github-deployment-dashboard
 
+Comes with a nifty list of your reporting services, and what environment has what latest commit on it.
+
 ![image](https://github.com/user-attachments/assets/d9b4573c-a0ff-4979-8630-60fc91b3cb8c)
+
+Also, each service, if using a PAT for your repo as described below, could give you details on each service, with useful links:
+
+<img width="953" height="654" alt="image" src="https://github.com/user-attachments/assets/fb66d8fa-2d6f-4c39-b671-93f4d35c12ea" />
 
 A cross-repository deployment dashboard for GitHub. See which commit of each service is deployed to which environment, with drift detection.
 
